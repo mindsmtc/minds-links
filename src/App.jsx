@@ -137,35 +137,49 @@ function LessonPlanner() {
   });
 
 const generateAIPlan = async () => {
+  // 1. Basic validation
+  if (config.selectedCategories.length === 0) {
+    alert("Please select focus areas first.");
+    return;
+  }
+
   setLoading(true);
   setStatus("Planning session...");
 
-  // 1. Double check this is your DEPLOYED url (ends in /exec)
+  // 🚨 MUST be your Deployed Web App URL (ends in /exec)
   const scriptURL = "https://script.google.com/macros/s/AKfycbyW3xoVTaIyD4qZLXqRI4lwIwWjoseM2IRbayGVg5f4kesVd8Ylet_C2RNMqeiQGS4/exec"; 
 
-  const promptText = `Generate a lesson plan for... [your prompt logic here]`;
+  const promptText = `Create a ${config.duration} min session for MINDS MYG. 
+    Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
+    Return JSON format: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
 
   try {
-    // 2. We put the prompt in the URL. This is a "Simple Request".
+    // 💡 We use a GET request because it's the most stable way to cross from Vercel to Google
     const finalURL = `${scriptURL}?prompt=${encodeURIComponent(promptText)}`;
     
     const response = await fetch(finalURL, {
       method: "GET",
-      mode: "cors", // Required
-      redirect: "follow", // CRITICAL: Google ALWAYS redirects
+      // 🚨 CRITICAL: Google ALWAYS redirects. 'follow' allows the fetch to reach the final data.
+      redirect: "follow" 
     });
 
-    if (!response.ok) throw new Error('Network response failed');
+    if (!response.ok) throw new Error('Network response was not ok');
     
-    const data = await response.json();
+    // 2. We get the text first to prevent silent parsing errors
+    const rawData = await response.text();
+    const data = JSON.parse(rawData);
     
-    if (data.activities) {
+    if (data && data.activities) {
       setPlan(data.activities);
-      setStatus("");
+      setStatus(""); // Success! Clear the status.
+    } else if (data.error) {
+      setStatus(`AI Error: ${data.error}`);
+    } else {
+      setStatus("Error: Unexpected data format from AI.");
     }
   } catch (err) {
     console.error("Fetch Error:", err);
-    setStatus("Connection failed. Check browser console for details.");
+    setStatus("Connection Error. Please check if the Google Script is deployed as 'Anyone'.");
   } finally {
     setLoading(false);
   }
