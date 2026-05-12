@@ -146,7 +146,7 @@ function LessonPlanner() {
   setStatus("Connecting to Gemini...");
 
   // 🚨 MUST be your Deployed Web App URL (ends in /exec)
-  const scriptURL = "https://script.google.com/macros/s/AKfycby3I0pFWyoQ-nHs9gT2lU479mcRFmU1oo534UUe8QrS4ubb1BCjlZj-_x3RY8RQaxp4/exec"; 
+  const scriptURL = "https://script.google.com/macros/s/AKfycbxwh5QzdW_o1HbPY3kjFMYaE9RD3kC8BO5tuoe9zb-QJJEo3EAj9n4VHEZfxxqzL_3O/exec"; 
 
   const promptText = `Create a ${config.duration} min session for MINDS MYG. 
     Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
