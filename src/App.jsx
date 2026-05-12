@@ -202,20 +202,13 @@ export default function App() {
         ))}
       </nav>
 
-      <main style={{ padding: "0 20px 40px" }}>
-        {activeTab === "links" && (
-          <div style={{ maxWidth: 480, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10 }}>
-            {DEFAULT_LINKS.map(link => (
-              <a key={link.id} href={link.url} target="_blank" rel="noreferrer" style={{ display: "block", padding: 16, background: "white", borderRadius: 12, border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)", textAlign: "center", fontWeight: 600 }}>
-                {link.emoji} {link.label}
-              </a>
-            ))}
-          </div>
-        )}
-        {activeTab === "finance" && <FinanceChecker />}
-        {activeTab === "aor" && <AORForm />}
-        {activeTab === "lesson" && <LessonPlanner />}
-      </main>
+  
+    <main style={{ padding: 20, maxWidth: 800, margin: "0 auto" }}>
+  {activeTab === "links" && <LinksView links={links} />}
+  {activeTab === "finance" && <FinanceChecker />}
+  {activeTab === "aor" && <AORForm />} {/* This ensures the AOR component is called */}
+  {activeTab === "lesson" && <LessonPlanner />}
+</main>
     </div>
   );
 }
