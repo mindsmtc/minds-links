@@ -146,7 +146,7 @@ const generateAIPlan = async () => {
   setStatus("Planning session...");
 
   // 🚨 Use your DEPLOYED Web App URL
-  const scriptURL = "https://script.google.com/macros/s/AKfycbxwh5QzdW_o1HbPY3kjFMYaE9RD3kC8BO5tuoe9zb-QJJEo3EAj9n4VHEZfxxqzL_3O/exec"; 
+  const scriptURL = "https://script.google.com/macros/s/AKfycbykoI1BQOi38K9jlTX5goLOu9Wuky3ttLyUXE12UAlBIMd0ri9umHwyxmZvHJ5GY6cj/exec"; 
 
   const promptText = `Create a ${config.duration} min session for MINDS MYG. 
     Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
