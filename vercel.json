@@ -1,6 +1,5 @@
 {
-  "routes": [
-    { "src": "/src/(.*)", "dest": "/src/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  "cleanUrls": true,
+  "framework": "vite",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
