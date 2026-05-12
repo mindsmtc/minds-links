@@ -132,71 +132,51 @@ function LessonPlanner() {
   const [config, setConfig] = useState({ selectedCategories: [], numActivities: 2, duration: 60 });
 
   const generateAIPlan = async () => {
-    setLoading(true);
-    // WARNING: In production, use a backend proxy. This header is for dev testing.
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": "YOUR_API_KEY_HERE", 
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-          "dangerously-allow-browser": "true" 
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 1500,
-          system: "You are a Special Education expert for MINDS MYG Singapore. Output JSON only.",
-          messages: [{
-            role: "user",
-            content: `Create a ${config.duration} min session for trainees with intellectual disabilities. Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. For each activity, include a visual setup description and 3 levels: Level 1 (Mobility support), Level 2 (General), Level 3 (Challenge). Return JSON: {"activities": [{"title": "", "visual": "", "l1": "", "l2": "", "l3": ""}]}`
-          }]
-        })
-      });
-      
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
-      const data = await response.json();
-      const parsed = JSON.parse(data.content[0].text);
-      setPlan(parsed.activities);
-    } catch (err) {
-      console.error(err);
-      alert("AI Error: Direct browser calls to Claude are often blocked by CORS. Ensure you are using a proxy or server-side script.");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false); // Logic to trigger your server-side Gemini function
+    const prompt = `Create a ${config.duration} min session for MINDS MYG. 
+      Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
+      For each activity, provide:
+      1. Title.
+      2. Level 1 (Mobility), Level 2 (General), Level 3 (Challenge).
+      3. Three specific "Canva Image Prompts" (Step 1, Step 2, Step 3) for visual aids.
+      Format: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
+    
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Canva Prompt Copied!");
   };
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", background: "var(--card)", padding: 25, borderRadius: 16, border: "1px solid var(--border)" }}>
-      <h3 style={{ color: "var(--accent)", marginTop: 0 }}>AI Lesson Generator</h3>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-        {CATEGORY_OPTIONS.map(cat => (
-          <button key={cat} onClick={() => {
-            const next = config.selectedCategories.includes(cat) ? config.selectedCategories.filter(c => c !== cat) : [...config.selectedCategories, cat];
-            setConfig({...config, selectedCategories: next});
-          }} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid var(--border)", background: config.selectedCategories.includes(cat) ? "var(--accent)" : "white", color: config.selectedCategories.includes(cat) ? "white" : "black", cursor: "pointer" }}>{cat}</button>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-        <input type="number" value={config.numActivities} onChange={e => setConfig({...config, numActivities: e.target.value})} style={{ flex: 1, padding: 8 }} placeholder="Count" />
-        <input type="number" value={config.duration} onChange={e => setConfig({...config, duration: e.target.value})} style={{ flex: 1, padding: 8 }} placeholder="Mins" />
-      </div>
-      <button onClick={generateAIPlan} disabled={loading || config.selectedCategories.length === 0} style={{ width: "100%", padding: 12, background: "var(--accent)", color: "white", border: "none", borderRadius: 10, cursor: "pointer" }}>{loading ? "Claude is thinking..." : "Generate AI Plan ✨"}</button>
-      
-      {plan && <div style={{ marginTop: 25 }}>
-        {plan.map((act, i) => (
-          <div key={i} style={{ background: "var(--bg)", padding: "15px", borderRadius: "10px", marginBottom: "15px" }}>
-            <h4 style={{ color: "var(--accent)", margin: "0 0 10px" }}>{act.title}</h4>
-            <p style={{ fontSize: "13px" }}><strong>Visuals:</strong> {act.visual}</p>
-            <div style={{ fontSize: "12px", display: "grid", gap: "5px", marginTop: "10px" }}>
-              <div style={{ padding: "8px", background: "#fee2e2", borderRadius: "5px" }}><strong>L1 (Mobility):</strong> {act.l1}</div>
-              <div style={{ padding: "8px", background: "#dcfce7", borderRadius: "5px" }}><strong>L2 (General):</strong> {act.l2}</div>
-              <div style={{ padding: "8px", background: "#dbeafe", borderRadius: "5px" }}><strong>L3 (Challenge):</strong> {act.l3}</div>
-            </div>
+    <div style={{ maxWidth: 700, margin: "0 auto", background: "var(--card)", padding: 25, borderRadius: 16 }}>
+      {/* ... (config inputs from previous version) ... */}
+
+      {plan && plan.map((act, i) => (
+        <div key={i} style={{ background: "white", padding: 20, borderRadius: 12, marginBottom: 15, border: "1px solid var(--border)" }}>
+          <h4 style={{ color: "var(--accent)", marginTop: 0 }}>{act.title}</h4>
+          
+          <div style={{ display: "grid", gap: 10, marginBottom: 15 }}>
+            <div style={{ padding: 10, background: "#fdf2f2", borderRadius: 8, fontSize: 13 }}><strong>L1 (Mobility):</strong> {act.l1}</div>
+            <div style={{ padding: 10, background: "#f0fdf4", borderRadius: 8, fontSize: 13 }}><strong>L2 (General):</strong> {act.l2}</div>
+            <div style={{ padding: 10, background: "#eff6ff", borderRadius: 8, fontSize: 13 }}><strong>L3 (Challenge):</strong> {act.l3}</div>
           </div>
-        ))}
-      </div>}
+
+          {/* New: Canva Prompt Section */}
+          <div style={{ background: "var(--bg)", padding: 12, borderRadius: 8, border: "1.5px dashed var(--accent)" }}>
+            <p style={{ fontSize: 11, fontWeight: "bold", margin: "0 0 8px", color: "var(--accent)" }}>🎨 CANVA VISUAL STEPS</p>
+            {act.canva_prompts.map((p, idx) => (
+              <button 
+                key={idx} 
+                onClick={() => copyToClipboard(`Style: Doodle, Simple, High Contrast. Subject: ${p}`)}
+                style={{ width: "100%", textAlign: "left", padding: "8px", background: "white", border: "1px solid #ddd", borderRadius: "6px", marginBottom: "5px", fontSize: "11px", cursor: "pointer" }}
+              >
+                📋 Copy Prompt for Step {idx + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
