@@ -143,7 +143,7 @@ function LessonPlanner() {
   }
 
   setLoading(true);
-  setStatus("Asking Gemini to plan...");
+  setStatus("Connecting to Gemini...");
 
   // 🚨 MUST be your Deployed Web App URL (ends in /exec)
   const scriptURL = "https://script.google.com/macros/s/AKfycby3I0pFWyoQ-nHs9gT2lU479mcRFmU1oo534UUe8QrS4ubb1BCjlZj-_x3RY8RQaxp4/exec"; 
@@ -153,24 +153,27 @@ function LessonPlanner() {
     Return JSON: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
 
   try {
-    // We use a GET request because it's more stable for Google Apps Script redirects
+    // 💡 We use query parameters because Google Apps Script handles them better than POST bodies
     const finalURL = `${scriptURL}?prompt=${encodeURIComponent(promptText)}`;
     
-    const response = await fetch(finalURL);
-    
+    const response = await fetch(finalURL, {
+      method: "GET",
+      redirect: "follow", // 🚨 CRITICAL: Google Apps Script always redirects
+    });
+
     if (!response.ok) throw new Error('Network response was not ok');
     
     const data = await response.json();
     
-    if (data.activities) {
+    if (data && data.activities) {
       setPlan(data.activities);
       setStatus("");
     } else {
-      setStatus("AI returned an empty plan.");
+      setStatus("Error: AI returned invalid data.");
     }
   } catch (err) {
     console.error("Fetch Error:", err);
-    setStatus("Connection Error. Check if the Script URL is correct and deployed as 'Anyone'.");
+    setStatus("Connection Error. Is the script URL correct?");
   } finally {
     setLoading(false);
   }
