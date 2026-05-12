@@ -10,28 +10,13 @@ const DEFAULT_LINKS = [
   { id: 2, label: "Instagram", url: "https://instagram.com/mindsmyg", emoji: "📸" },
   { id: 3, label: "Volunteer Sign-Up", url: "https://www.tinyurl.com/mindsvolreg", emoji: "🙋" },
   { id: 4, label: "Trainee Sign-up", url: "https://www.tinyurl.com/mindsstepreg", emoji: "💕" },
-  { id: 5, label: "Programme Ideas", url: "https://canva.link/qaycqpl3ctflgdf", emoji: "🏠" },
-  { id: 6, label: "Incident Reporting Form", url: "https://forms.office.com/Pages/ResponsePage.aspx?id=7XQ5ALlMskmFb6ViXot-iF5XuQffQhxGrfBaBFcUTdxUOUVQWTdVMjdZOFM0N0xLTE1NTldKVjRKMyQlQCN0PWcu", emoji: "👍" },
   { id: 7, label: "Finance Infographic", url: "https://canva.link/jzdvp6f3vvobcxt", emoji: "💰" },
 ];
 
-const ACTIVITY_TYPES = [
-  { id: "craft", label: "Craft", outline: "Focus on fine motor skills using recycled materials or seasonal themes." },
-  { id: "numeracy", label: "Numeracy", outline: "Sorting objects by color/size and basic counting exercises up to 10." },
-  { id: "physical", label: "Physical Activity", outline: "Low-impact exercises like balloon tossing, stretching, or seated yoga." },
-  { id: "horticulture", label: "Horticulture", outline: "Sensory engagement with soil, seeds, and watering indoor plants." },
-  { id: "music", label: "Music", outline: "Rhythm recognition using hand percussion and singing familiar songs." },
-  { id: "cooking", label: "Cooking / Baking", outline: "Non-heat activities like sandwich making or decorating cupcakes." },
-  { id: "literacy", label: "Literacy", outline: "Visual storytelling with picture cards and word-association games." },
-  { id: "sensory", label: "Sensory Play", outline: "Engaging tactile senses with sand, slime, or textured fabrics." },
-  { id: "social", label: "Social Skills", outline: "Role-playing turn-taking, greetings, and cooperative group games." },
-  { id: "drama", label: "Drama / Role Play", outline: "Using props to act out daily scenarios like grocery shopping." },
+const CATEGORY_OPTIONS = [
+  "Craft", "Numeracy", "Physical", "Horticulture", "Music", 
+  "Cooking/Baking", "Literacy", "Sensory Play", "Social Skills", "Drama"
 ];
-
-// ─────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────
-function generateId() { return Math.random().toString(36).slice(2, 9); }
 
 // ─────────────────────────────────────────────────────────
 // FINANCE CHECKER
@@ -51,102 +36,59 @@ function FinanceChecker() {
 
     if (amt < 500) {
       category = "Claims (<$500)";
-      methodAdvice = "💳 PAYMENT MODE: Cash, Debit, or NETS only.";
+      methodAdvice = "💳 PAYMENT: Cash, Debit, or NETS only.";
       steps = [
         "✅ Pay out of pocket using Cash, Debit, or NETS.",
         "🚨 STRICTLY NO credit card payments (Claims will be rejected).",
         "📋 Fill in the Claim Form and attach ALL receipts to the same form.",
-        "📁 Submit the completed claim form into the submissions folder.",
-        "⚠️ Max claim: $500 per person per month.",
-        paymentMethod === "credit" ? "🚨 ALERT: You selected Credit Card—this payment is NOT allowed!" : "",
+        paymentMethod === "credit" ? "🚨 ALERT: Credit Card selected—Claim will be REJECTED!" : "",
       ].filter(Boolean);
     } else if (amt <= 3000) {
-      category = source === "budget" ? "Invoices ($500–$3000)" : "Invoices from Donations ($500–$3000)";
-      methodAdvice = "🧾 PAYMENT MODE: Vendor Bills MINDS (30-day Credit).";
+      category = "Invoices ($500–$3000)";
+      methodAdvice = "🧾 PAYMENT: Vendor Bills MINDS (Direct Invoicing).";
       steps = [
-        "📝 Bill to: MINDSG LTD, 11 Jalan Ubi, Block 3 #01-21 (Level 2), Singapore 409074.",
-        "📄 Ask vendor for an Account Opening Form if they are new.",
-        "📁 Submit invoice + Account Opening Form in the invoice folder.",
-        "💰 Payment: By 15th (if submitted by 2nd) or 30th (if submitted by 17th).",
-        source === "donation" ? "📧 Inform donation@minds.org.sg of the designation to MYG." : "",
-      ].filter(Boolean);
+        "📝 Billing: MINDSG LTD, 11 Jalan Ubi, Block 3 #01-21, S(409074).",
+        "📄 New vendors must complete an Account Opening Form.",
+        "💰 Payment cycles are on the 15th and 30th of each month.",
+      ];
     } else {
-      category = source === "budget" ? "Quotations (>$3000)" : "Quotations from Donations (>$3000)";
-      methodAdvice = "🏦 PAYMENT MODE: Bank Transfer / Corporate Cheque.";
+      category = "Procurement (>$3000)";
+      methodAdvice = "🏦 PAYMENT: Bank Transfer / Corporate Cheque.";
       steps = [
-        "⏰ Start at least 3 months before the event.",
-        "✉️ Staff must get CSS Director or Finance Director + CEO approval.",
-        "📋 Staff issues an Invitation to Quote (ITQ) for vendor bidding.",
-        "🤝 Project team selects the vendor based on the 3 quotes received.",
-        "⚠️ If only 1 vendor exists, an extra week for 'Direct Contracting' approval is needed.",
-      ].filter(Boolean);
+        "⏰ Start 3 months early. Requires 3 competitive quotes.",
+        "✉️ Must be approved by CSS Director/CEO.",
+        "📋 Staff issues an Invitation to Quote (ITQ).",
+      ];
     }
     setResult({ category, steps, amount: amt, methodAdvice });
   }
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      <div style={{ background: "var(--card)", borderRadius: 16, padding: 28, marginBottom: 20, border: "1px solid var(--border)" }}>
-        <h3 style={{ margin: "0 0 20px", fontSize: 18, fontFamily: "Fraunces, serif", color: "var(--accent)" }}>Finance Rules Checker</h3>
-        
-        <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>PURCHASE AMOUNT (SGD)</label>
-        <input
-          type="number" value={amount} onChange={e => setAmount(e.target.value)}
-          placeholder="0.00" min="0" step="0.01"
-          style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid var(--border)", background: "var(--bg)", color: "var(--text)", fontSize: 16, marginBottom: 16, boxSizing: "border-box" }}
-        />
-
-        <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>FUNDING SOURCE</label>
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          {[["budget","MINDS MYG Budget"],["donation","Donations"]].map(([v,l]) => (
-            <button key={v} onClick={() => setSource(v)} style={{
-              flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${source===v?"var(--accent)":"var(--border)"}`,
-              background: source===v ? "var(--accent)" : "var(--card)", color: source===v ? "#fff" : "var(--text)",
-              cursor: "pointer", fontWeight: 600, fontSize: 14, transition: "all .2s"
-            }}>{l}</button>
-          ))}
-        </div>
-
-        <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>PAYMENT METHOD</label>
-        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
-          {[["cash","Cash"],["debit","Debit/NETS"],["credit","Credit Card ⚠️"]].map(([v,l]) => (
-            <button key={v} onClick={() => setPaymentMethod(v)} style={{
-              flex: 1, minWidth: 100, padding: "9px 0", borderRadius: 10,
-              border: `2px solid ${paymentMethod===v?(v==="credit"?"#ef4444":"var(--accent)"):"var(--border)"}`,
-              background: paymentMethod===v?(v==="credit"?"#ef444422":"var(--accent-soft)"):"var(--card)",
-              color: paymentMethod===v?(v==="credit"?"#ef4444":"var(--accent)"):"var(--muted)",
-              cursor: "pointer", fontWeight: 600, fontSize: 13, transition: "all .2s"
-            }}>{l}</button>
-          ))}
-        </div>
-
-        <button onClick={check} style={{
-          width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
-          background: "var(--accent)", color: "#fff", fontWeight: 700, fontSize: 16, cursor: "pointer",
-          fontFamily: "Fraunces, serif", letterSpacing: ".3px"
-        }}>Check Finance Rules →</button>
+    <div style={{ maxWidth: 600, margin: "0 auto", background: "var(--card)", padding: 25, borderRadius: 16, border: "1px solid var(--border)" }}>
+      <h3 style={{ fontFamily: "Fraunces, serif", color: "var(--accent)", marginTop: 0 }}>Finance Rules Checker</h3>
+      <input
+        type="number" value={amount} onChange={e => setAmount(e.target.value)}
+        placeholder="Enter amount (SGD)"
+        style={{ width: "100%", padding: 12, borderRadius: 10, border: "1px solid var(--border)", marginBottom: 15, boxSizing: "border-box" }}
+      />
+      <div style={{ display: "flex", gap: 10, marginBottom: 15 }}>
+        {["cash", "debit", "credit"].map(m => (
+          <button key={m} onClick={() => setPaymentMethod(m)} style={{
+            flex: 1, padding: 10, borderRadius: 8, border: "1px solid var(--border)",
+            background: paymentMethod === m ? "var(--accent-soft)" : "white",
+            color: paymentMethod === m ? "var(--accent)" : "inherit", cursor: "pointer", fontWeight: "bold"
+          }}>{m.toUpperCase()}</button>
+        ))}
       </div>
-
+      <button onClick={check} className="btn" style={{ width: "100%", padding: 12, background: "var(--accent)", color: "white", border: "none", borderRadius: 10, fontWeight: "bold", cursor: "pointer" }}>Check Rules</button>
+      
       {result && (
-        <div style={{ background: result.error ? "#fef2f2" : "var(--card)", borderRadius: 16, padding: 24, border: `1px solid ${result.error ? "#fecaca" : "var(--border)"}` }}>
-          {result.error ? (
-            <p style={{ color: "#ef4444", margin: 0, fontWeight: 600 }}>⚠️ {result.error}</p>
-          ) : (
-            <>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                <span style={{ background: "var(--accent)", color: "#fff", borderRadius: 8, padding: "4px 12px", fontSize: 13, fontWeight: 700 }}>{result.category}</span>
-                <span style={{ fontSize: 20, fontWeight: 700, color: "var(--accent)" }}>S${result.amount.toFixed(2)}</span>
-              </div>
-              <p style={{ fontWeight: 700, marginBottom: 12, fontSize: 14 }}>{result.methodAdvice}</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {result.steps.map((s, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, padding: "10px 14px", background: s.includes("🚨") ? "#fef2f2" : "var(--bg)", borderRadius: 10, fontSize: 14, lineHeight: 1.5 }}>
-                    <span>{s}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+        <div style={{ marginTop: 20, padding: 15, background: "var(--bg)", borderRadius: 10 }}>
+          <h4 style={{ margin: "0 0 10px", color: "var(--accent)" }}>{result.category}</h4>
+          <p><strong>{result.methodAdvice}</strong></p>
+          <ul style={{ paddingLeft: 20, fontSize: 14 }}>
+            {result.steps.map((s, i) => <li key={i} style={{ marginBottom: 5 }}>{s}</li>)}
+          </ul>
         </div>
       )}
     </div>
@@ -157,116 +99,140 @@ function FinanceChecker() {
 // AOR FORM
 // ─────────────────────────────────────────────────────────
 function AORForm() {
-  const [data, setData] = useState({
-    date: "", purpose: "", approver: "", dept: "CSS - MYG", budgeted: "Yes",
-    items: [{ id: generateId(), item: "", cost: "", remarks: "" }],
-  });
-
-  const set = (field, val) => setData(p => ({...p, [field]: val}));
-  const totalCost = data.items.reduce((s, i) => s + (parseFloat(i.cost)||0), 0);
-
-  function addItem() {
-    setData(p => ({ ...p, items: [...p.items, { id: generateId(), item: "", cost: "", remarks: "" }] }));
-  }
+  const [items, setItems] = useState([{ id: 1, desc: "", cost: 0 }]);
+  const total = items.reduce((sum, i) => sum + (parseFloat(i.cost) || 0), 0);
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", background: "var(--card)", padding: 28, borderRadius: 16, border: "1px solid var(--border)" }}>
-      <h3 style={{ fontFamily: "Fraunces, serif", color: "var(--accent)", marginTop: 0 }}>Approval of Requirement (AOR)</h3>
-      
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15, marginBottom: 20 }}>
-        <div>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)" }}>PURPOSE OF EXPENDITURE</label>
-          <input value={data.purpose} onChange={e => set("purpose", e.target.value)} style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }} />
-        </div>
-        <div>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--muted)" }}>DEPARTMENT</label>
-          <input value={data.dept} disabled style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border)", background: "var(--border)", color: "var(--text)" }} />
-        </div>
-      </div>
-
-      <table style={{ width: "100%", marginBottom: 15 }}>
+    <div style={{ maxWidth: 700, margin: "0 auto", background: "white", padding: 30, borderRadius: 12, border: "1px solid #ddd" }}>
+      <h3 style={{ fontFamily: "Fraunces", color: "var(--accent)" }}>Approval of Requirement (AOR)</h3>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
-          <tr style={{ textAlign: "left", fontSize: 12, color: "var(--muted)" }}>
-            <th>Item / Activity</th>
-            <th>Est. Cost ($)</th>
+          <tr style={{ borderBottom: "2px solid var(--accent)" }}>
+            <th style={{ textAlign: "left", padding: 10 }}>Item Description</th>
+            <th style={{ textAlign: "right", padding: 10 }}>Est. Cost ($)</th>
           </tr>
         </thead>
         <tbody>
-          {data.items.map(item => (
-            <tr key={item.id}>
-              <td><input style={{ width: "95%", padding: 8, marginBottom: 5 }} placeholder="Description" /></td>
-              <td><input style={{ width: "100%", padding: 8, marginBottom: 5 }} type="number" onChange={(e) => {
-                const newItems = data.items.map(i => i.id === item.id ? {...i, cost: e.target.value} : i);
-                setData(p => ({...p, items: newItems}));
+          {items.map((item, idx) => (
+            <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
+              <td><input style={{ width: "90%", padding: 8, border: "none" }} placeholder="Activity/Item name..." /></td>
+              <td><input type="number" style={{ width: "80px", padding: 8, textAlign: "right" }} onChange={(e) => {
+                const newItems = [...items];
+                newItems[idx].cost = e.target.value;
+                setItems(newItems);
               }} /></td>
             </tr>
           ))}
         </tbody>
       </table>
-
-      <button onClick={addItem} style={{ background: "none", border: "1.5px dashed var(--border)", width: "100%", padding: 10, borderRadius: 8, cursor: "pointer", color: "var(--muted)" }}>+ Add Item</button>
-      
-      <div style={{ marginTop: 20, padding: 15, background: "var(--accent-soft)", borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontWeight: 700 }}>Total Estimated Cost:</span>
-        <span style={{ fontSize: 18, fontWeight: 700, color: "var(--accent)" }}>${totalCost.toFixed(2)}</span>
-      </div>
-
-      <button onClick={() => window.print()} className="btn" style={{ width: "100%", marginTop: 15, padding: 12, background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>Print AOR for Approval</button>
+      <button onClick={() => setItems([...items, { id: Date.now(), desc: "", cost: 0 }])} style={{ marginTop: 10, cursor: "pointer" }}>+ Add Line</button>
+      <div style={{ textAlign: "right", marginTop: 20, fontWeight: "bold", fontSize: 18 }}>Total: ${total.toFixed(2)}</div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────
-// LESSON PLANNER
+// AI LESSON PLANNER (CLAUDE INTEGRATION)
 // ─────────────────────────────────────────────────────────
 function LessonPlanner() {
-  const [selectedType, setSelectedType] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [plan, setPlan] = useState(null);
+  const [config, setConfig] = useState({
+    selectedCategories: [],
+    numActivities: 2,
+    duration: 60
+  });
+
+  const generateAIPlan = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": "YOUR_CLAUDE_API_KEY", // REPLACE THIS
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+          "dangerously-allow-browser": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 1500,
+          system: "You are an expert Special Education teacher for MINDS MYG Singapore. Create inclusive activity plans.",
+          messages: [{
+            role: "user",
+            content: `Create a ${config.duration} min session with ${config.numActivities} activities. Categories: ${config.selectedCategories.join(", ")}. 
+            For each activity, provide:
+            1. Description & Visual Setup.
+            2. Level 1 (High Support/Mobility): Minimal motor skills needed.
+            3. Level 2 (Standard): Guided group participation.
+            4. Level 3 (Challenge): Higher independence.
+            Return as a structured JSON array named 'activities'.`
+          }]
+        })
+      });
+      const data = await response.json();
+      const parsed = JSON.parse(data.content[0].text);
+      setPlan(parsed.activities);
+    } catch (err) {
+      alert("AI Generation failed. Check API Key or CORS settings.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", background: "var(--card)", padding: 28, borderRadius: 16, border: "1px solid var(--border)" }}>
-      <h3 style={{ fontFamily: "Fraunces, serif", color: "var(--accent)", marginTop: 0 }}>Lesson Planner</h3>
-      <p style={{ fontSize: 14, color: "var(--muted)", marginBottom: 20 }}>Select an activity type to see the session outline for trainees.</p>
+    <div style={{ maxWidth: 700, margin: "0 auto", background: "var(--card)", padding: 25, borderRadius: 16 }}>
+      <h3 style={{ fontFamily: "Fraunces", color: "var(--accent)" }}>AI-Powered Planner</h3>
       
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 25 }}>
-        {ACTIVITY_TYPES.map(type => (
-          <button 
-            key={type.id} 
-            onClick={() => setSelectedType(type)}
-            style={{
-              padding: "15px 10px", borderRadius: 12, border: `2px solid ${selectedType.id === type.id ? "var(--accent)" : "var(--border)"}`,
-              background: selectedType.id === type.id ? "var(--accent-soft)" : "var(--card)", cursor: "pointer", textAlign: "center"
-            }}
-          >
-            <div style={{ fontSize: 24, marginBottom: 5 }}>{type.icon}</div>
-            <div style={{ fontSize: 12, fontWeight: 700 }}>{type.label}</div>
-          </button>
-        ))}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: 13, fontWeight: "bold", color: "var(--muted)" }}>SELECT CATEGORIES:</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {CATEGORY_OPTIONS.map(cat => (
+            <button key={cat} onClick={() => {
+              const prev = config.selectedCategories;
+              const next = prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat];
+              setConfig({ ...config, selectedCategories: next });
+            }} style={{
+              padding: "6px 12px", borderRadius: 20, border: "1px solid var(--border)", cursor: "pointer",
+              background: config.selectedCategories.includes(cat) ? "var(--accent)" : "white",
+              color: config.selectedCategories.includes(cat) ? "white" : "black"
+            }}>{cat}</button>
+          ))}
+        </div>
       </div>
 
-      {selectedType && (
-        <div style={{ padding: 20, background: "var(--bg)", borderRadius: 12, borderLeft: "4px solid var(--accent)" }}>
-          <h4 style={{ margin: "0 0 10px" }}>{selectedType.icon} {selectedType.label} Outline</h4>
-          <p style={{ lineHeight: 1.6, fontSize: 14 }}>{selectedType.outline}</p>
-          <div style={{ marginTop: 15, fontSize: 12, color: "var(--muted)" }}>
-            <strong>Suggested Materials:</strong> Glue, scissors, safety paper, and visual aids.
-          </div>
+      <div style={{ display: "flex", gap: 15, marginBottom: 20 }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: 12 }}>No. of Activities</label>
+          <input type="number" value={config.numActivities} onChange={e => setConfig({...config, numActivities: e.target.value})} style={{ width: "100%", padding: 8 }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: 12 }}>Total Duration (mins)</label>
+          <input type="number" value={config.duration} onChange={e => setConfig({...config, duration: e.target.value})} style={{ width: "100%", padding: 8 }} />
+        </div>
+      </div>
+
+      <button onClick={generateAIPlan} disabled={loading || config.selectedCategories.length === 0} style={{
+        width: "100%", padding: 15, background: "var(--accent)", color: "white", border: "none", borderRadius: 10, fontWeight: "bold", cursor: "pointer"
+      }}>
+        {loading ? "Claude is generating..." : "Generate AI Lesson Plan ✨"}
+      </button>
+
+      {plan && (
+        <div style={{ marginTop: 30 }}>
+          {plan.map((act, i) => (
+            <div key={i} style={{ background: "white", padding: 20, borderRadius: 12, marginBottom: 15, border: "1px solid var(--border)" }}>
+              <h4 style={{ color: "var(--accent)", marginTop: 0 }}>{act.title}</h4>
+              <p style={{ fontSize: 14 }}>{act.visual_setup}</p>
+              <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+                <div style={{ padding: 10, background: "#fdf2f2", borderRadius: 8, fontSize: 13 }}><strong>L1 (Support):</strong> {act.level1}</div>
+                <div style={{ padding: 10, background: "#f0fdf4", borderRadius: 8, fontSize: 13 }}><strong>L2 (General):</strong> {act.level2}</div>
+                <div style={{ padding: 10, background: "#eff6ff", borderRadius: 8, fontSize: 13 }}><strong>L3 (Challenge):</strong> {act.level3}</div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────
-// LINKS PAGE
-// ─────────────────────────────────────────────────────────
-function LinksPage({ links }) {
-  return (
-    <div style={{ maxWidth: 480, margin: "0 auto" }}>
-      {links.map(link => (
-        <a key={link.id} href={link.url} target="_blank" rel="noreferrer" style={{ display: "block", padding: 16, background: "var(--card)", marginBottom: 8, borderRadius: 12, border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)", transition: "transform 0.1s" }}>
-          <span style={{ marginRight: 10 }}>{link.emoji}</span> {link.label}
-        </a>
-      ))}
     </div>
   );
 }
@@ -275,52 +241,31 @@ function LinksPage({ links }) {
 // MAIN APP
 // ─────────────────────────────────────────────────────────
 export default function App() {
-  const [activeTab, setActiveTab] = useState("links");
-  const [links] = useState(DEFAULT_LINKS);
-  const [dark] = useState(false);
+  const [activeTab, setActiveTab] = useState("finance");
 
-  const cssVars = dark ? {
-    "--bg": "#111827", "--card": "#1f2937", "--border": "#374151",
-    "--text": "#f9fafb", "--muted": "#9ca3af", "--accent": "#10b981",
-    "--accent-soft": "#064e3b",
-  } : {
+  const cssVars = {
     "--bg": "#f0fdf4", "--card": "#ffffff", "--border": "#d1fae5",
     "--text": "#111827", "--muted": "#6b7280", "--accent": "#059669",
     "--accent-soft": "#d1fae5",
   };
 
-  const navItems = [
-    { id: "links", label: "Links" },
-    { id: "finance", label: "Finance" },
-    { id: "aor", label: "AOR Form" },
-    { id: "lesson", label: "Lesson Planner" }
-  ];
-
   return (
-    <div style={{ ...cssVars, minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "DM Sans, sans-serif" }}>
-      <header style={{ background: "var(--accent)", color: "#fff", padding: "30px 20px", textAlign: "center" }}>
-        <h1 style={{ margin: 0, fontFamily: "Fraunces, serif" }}>MINDS MYG Operations</h1>
+    <div style={{ ...cssVars, minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "sans-serif" }}>
+      <header style={{ background: "var(--accent)", color: "white", padding: "20px", textAlign: "center" }}>
+        <h1 style={{ margin: 0, fontFamily: "Fraunces" }}>MINDS MYG Ops Portal</h1>
       </header>
-      
-      <nav style={{ display: "flex", justifyContent: "center", gap: 10, padding: "20px", flexWrap: "wrap" }}>
-        {navItems.map(item => (
-          <button 
-            key={item.id} 
-            onClick={() => setActiveTab(item.id)} 
-            style={{ 
-              padding: "10px 20px", borderRadius: 20, border: "none",
-              background: activeTab === item.id ? "var(--accent)" : "var(--card)",
-              color: activeTab === item.id ? "#fff" : "var(--text)",
-              fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
-            }}
-          >
-            {item.label}
-          </button>
+
+      <nav style={{ display: "flex", justifyContent: "center", gap: 10, padding: 20 }}>
+        {["finance", "aor", "lesson"].map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)} style={{
+            padding: "10px 20px", borderRadius: 20, border: "none", cursor: "pointer",
+            background: activeTab === tab ? "var(--accent)" : "white",
+            color: activeTab === tab ? "white" : "black", fontWeight: "bold"
+          }}>{tab.toUpperCase()}</button>
         ))}
       </nav>
 
-      <main style={{ padding: "0 20px 40px" }}>
-        {activeTab === "links" && <LinksPage links={links} />}
+      <main style={{ padding: 20 }}>
         {activeTab === "finance" && <FinanceChecker />}
         {activeTab === "aor" && <AORForm />}
         {activeTab === "lesson" && <LessonPlanner />}
