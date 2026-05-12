@@ -136,16 +136,16 @@ function LessonPlanner() {
     duration: 60 
   });
 
-  const generateAIPlan = async () => {
+const generateAIPlan = async () => {
   if (config.selectedCategories.length === 0) {
     alert("Please select focus areas first.");
     return;
   }
 
   setLoading(true);
-  setStatus("Connecting to Gemini...");
+  setStatus("Planning session...");
 
-  // 🚨 MUST be your Deployed Web App URL (ends in /exec)
+  // 🚨 Use your DEPLOYED Web App URL
   const scriptURL = "https://script.google.com/macros/s/AKfycbxwh5QzdW_o1HbPY3kjFMYaE9RD3kC8BO5tuoe9zb-QJJEo3EAj9n4VHEZfxxqzL_3O/exec"; 
 
   const promptText = `Create a ${config.duration} min session for MINDS MYG. 
@@ -153,27 +153,26 @@ function LessonPlanner() {
     Return JSON: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
 
   try {
-    // 💡 We use query parameters because Google Apps Script handles them better than POST bodies
+    // 💡 GET requests with 'follow' redirect bypass most CORS blocks in GAS
     const finalURL = `${scriptURL}?prompt=${encodeURIComponent(promptText)}`;
     
     const response = await fetch(finalURL, {
       method: "GET",
-      redirect: "follow", // 🚨 CRITICAL: Google Apps Script always redirects
+      mode: "cors", // Let the browser know we expect a cross-origin response
+      redirect: "follow" // 🚨 REQUIRED: Google redirects all Web App calls
     });
 
-    if (!response.ok) throw new Error('Network response was not ok');
+    if (!response.ok) throw new Error('Network error');
     
     const data = await response.json();
     
     if (data && data.activities) {
       setPlan(data.activities);
       setStatus("");
-    } else {
-      setStatus("Error: AI returned invalid data.");
     }
   } catch (err) {
     console.error("Fetch Error:", err);
-    setStatus("Connection Error. Is the script URL correct?");
+    setStatus("Connection Error. Ensure script is deployed as 'Anyone'.");
   } finally {
     setLoading(false);
   }
