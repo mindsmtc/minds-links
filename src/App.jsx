@@ -128,6 +128,7 @@ function AORForm() {
 // ─────────────────────────────────────────────────────────
 function LessonPlanner() {
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("");
   const [plan, setPlan] = useState(null);
   const [config, setConfig] = useState({ 
     selectedCategories: [], 
@@ -135,88 +136,115 @@ function LessonPlanner() {
     duration: 60 
   });
 
-  const CANVA_MAGIC_MEDIA_URL = "https://www.canva.com/magic-home";
+  const generateAIPlan = () => {
+    if (config.selectedCategories.length === 0) {
+      alert("Please select at least one focus area.");
+      return;
+    }
 
-  const generateAIPlan = async () => {
     setLoading(true);
-    // This prompt is optimized for Gemini to produce clean JSON for your app
-    const prompt = `Create a ${config.duration} min session for MINDS MYG. 
-      Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
+    setStatus("Connecting to Google AI...");
+    
+    const prompt = `Create a ${config.duration} minute session for MINDS MYG trainees. 
+      Total activities: ${config.numActivities}. 
+      Categories to include: ${config.selectedCategories.join(", ")}. 
       For each activity, provide:
       1. Title.
-      2. Level 1 (Mobility), Level 2 (General), Level 3 (Challenge).
-      3. Three "Canva Magic Media Prompts" (Step 1, Step 2, Step 3) in a simple doodle style.
-      Return JSON: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
+      2. Level 1 (Mobility support), Level 2 (General), Level 3 (Challenge).
+      3. Three 'Canva Prompts' for simple visual aids.
+      Return JSON format: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
 
     try {
+      // This MUST match the function name in Code.gs
       google.script.run
         .withSuccessHandler((response) => {
-          const parsed = JSON.parse(response);
-          setPlan(parsed.activities);
-          setLoading(false);
+          try {
+            const data = JSON.parse(response);
+            // Gemini sometimes wraps the JSON in a 'candidates' object depending on your Script setup
+            const actualPlan = data.candidates ? JSON.parse(data.candidates[0].content.parts[0].text) : data;
+            setPlan(actualPlan.activities);
+            setLoading(false);
+            setStatus("");
+          } catch (e) {
+            setStatus("Error parsing AI response.");
+            setLoading(false);
+          }
         })
-        .withFailureHandler(() => {
-          alert("AI Connection failed. Please check your Code.gs setup.");
+        .withFailureHandler((err) => {
+          setStatus("Server Error: " + err.message);
           setLoading(false);
         })
         .generateLessonPlanWithGemini(prompt);
     } catch (err) {
+      setStatus("Script Error: " + err.message);
       setLoading(false);
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    // Subtle feedback instead of a jarring alert
-  };
-
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", background: "white", padding: 25, borderRadius: 16, border: "1px solid var(--border)" }}>
+    <div style={{ maxWidth: 700, margin: "0 auto", background: "white", padding: 25, borderRadius: 16, border: "1px solid #e2e8f0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <h3 style={{ color: "var(--accent)", margin: 0 }}>AI Lesson Generator</h3>
-        <a href={CANVA_MAGIC_MEDIA_URL} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "var(--accent)", fontWeight: "bold", textDecoration: "none", border: "1px solid var(--accent)", padding: "4px 10px", borderRadius: "12px" }}>
+        <a href="https://www.canva.com/magic-home" target="_blank" rel="noreferrer" style={{ fontSize: "11px", color: "var(--accent)", textDecoration: "none", border: "1px solid var(--accent)", padding: "5px 12px", borderRadius: "20px", fontWeight: "bold" }}>
           Open Canva Magic Media ↗
         </a>
       </div>
 
-      {/* Configuration Section */}
-      <div style={{ marginBottom: 20 }}>
-        <p style={{ fontSize: 12, fontWeight: "bold", color: "var(--muted)" }}>FOCUS AREAS:</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-          {CATEGORY_OPTIONS.map(cat => (
+      {/* Inputs for Activities and Duration */}
+      <div style={{ display: "flex", gap: "15px", marginBottom: "20px" }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: "5px" }}>Number of Activities</label>
+          <input 
+            type="number" 
+            value={config.numActivities} 
+            onChange={(e) => setConfig({...config, numActivities: e.target.value})}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e0" }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label style={{ fontSize: "12px", fontWeight: "bold", display: "block", marginBottom: "5px" }}>Total Duration (Mins)</label>
+          <input 
+            type="number" 
+            value={config.duration} 
+            onChange={(e) => setConfig({...config, duration: e.target.value})}
+            style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e0" }}
+          />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 25 }}>
+        <p style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "8px" }}>FOCUS AREAS:</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {["Craft", "Numeracy", "Physical", "Horticulture", "Music", "Cooking", "Literacy", "Sensory", "Social", "Drama"].map(cat => (
             <button key={cat} onClick={() => {
-              const next = config.selectedCategories.includes(cat) 
-                ? config.selectedCategories.filter(c => c !== cat) 
-                : [...config.selectedCategories, cat];
+              const next = config.selectedCategories.includes(cat) ? config.selectedCategories.filter(c => c !== cat) : [...config.selectedCategories, cat];
               setConfig({...config, selectedCategories: next});
-            }} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid #ddd", background: config.selectedCategories.includes(cat) ? "var(--accent)" : "white", color: config.selectedCategories.includes(cat) ? "white" : "black", cursor: "pointer", fontSize: "12px" }}>
+            }} style={{ padding: "6px 14px", borderRadius: "20px", border: "1px solid #e2e8f0", background: config.selectedCategories.includes(cat) ? "var(--accent)" : "white", color: config.selectedCategories.includes(cat) ? "white" : "black", cursor: "pointer", fontSize: "12px" }}>
               {cat}
             </button>
           ))}
         </div>
       </div>
 
-      <button onClick={generateAIPlan} disabled={loading || config.selectedCategories.length === 0} style={{ width: "100%", padding: 12, background: "var(--accent)", color: "white", border: "none", borderRadius: 10, fontWeight: "bold", cursor: "pointer", marginBottom: 30 }}>
-        {loading ? "Creating your plan..." : "Generate Full Lesson Plan ✨"}
+      <button onClick={generateAIPlan} disabled={loading} style={{ width: "100%", padding: "14px", background: "var(--accent)", color: "white", border: "none", borderRadius: "10px", fontWeight: "bold", cursor: "pointer", fontSize: "16px" }}>
+        {loading ? "Thinking..." : "Generate Full Plan ✨"}
       </button>
 
-      {/* Results Display */}
-      {plan && plan.map((act, i) => (
-        <div key={i} style={{ padding: 20, borderRadius: 12, marginBottom: 20, border: "1px solid #eee", background: "#fafafa" }}>
-          <h4 style={{ color: "var(--accent)", marginTop: 0 }}>{act.title}</h4>
-          
-          <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
-            <div style={{ padding: 10, background: "#fff5f5", borderRadius: 8, fontSize: 13, borderLeft: "4px solid #feb2b2" }}><strong>L1 (Support):</strong> {act.l1}</div>
-            <div style={{ padding: 10, background: "#f0fff4", borderRadius: 8, fontSize: 13, borderLeft: "4px solid #9ae6b4" }}><strong>L2 (General):</strong> {act.level2 || act.l2}</div>
-            <div style={{ padding: 10, background: "#ebf8ff", borderRadius: 8, fontSize: 13, borderLeft: "4px solid #90cdf4" }}><strong>L3 (Challenge):</strong> {act.l3}</div>
-          </div>
+      {status && <p style={{ textAlign: "center", fontSize: "12px", color: "var(--muted)", marginTop: "10px" }}>{status}</p>}
 
-          <div style={{ background: "white", padding: 15, borderRadius: 8, border: "1px dashed #cbd5e0" }}>
-            <p style={{ fontSize: 11, fontWeight: "bold", margin: "0 0 10px", color: "#4a5568" }}>CANVA IMAGE PROMPTS (Click to Copy):</p>
+      {plan && plan.map((act, i) => (
+        <div key={i} style={{ marginTop: 25, padding: 20, borderRadius: 12, border: "1px solid #edf2f7", background: "#f8fafc" }}>
+          <h4 style={{ color: "var(--accent)", marginTop: 0 }}>{act.title}</h4>
+          <div style={{ display: "grid", gap: 10, marginBottom: 15 }}>
+            <div style={{ padding: "10px", background: "#fff5f5", borderRadius: "8px", fontSize: "13px", borderLeft: "4px solid #fc8181" }}><strong>L1 (Support):</strong> {act.l1}</div>
+            <div style={{ padding: "10px", background: "#f0fff4", borderRadius: "8px", fontSize: "13px", borderLeft: "4px solid #68d391" }}><strong>L2 (General):</strong> {act.l2}</div>
+            <div style={{ padding: "10px", background: "#ebf8ff", borderRadius: "8px", fontSize: "13px", borderLeft: "4px solid #63b3ed" }}><strong>L3 (Challenge):</strong> {act.l3}</div>
+          </div>
+          <div style={{ background: "white", padding: "12px", borderRadius: "8px", border: "1px dashed #cbd5e0" }}>
+            <p style={{ fontSize: "10px", fontWeight: "bold", color: "#718096", margin: "0 0 8px" }}>CANVA STEP PROMPTS:</p>
             {act.canva_prompts.map((p, idx) => (
-              <button key={idx} onClick={() => copyToClipboard(`Educational visual aid, simple flat doodle style, high contrast: ${p}`)} style={{ width: "100%", textAlign: "left", padding: "10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "6px", marginBottom: "8px", fontSize: "12px", cursor: "pointer", display: "flex", justifyContent: "space-between" }}>
-                <span>Step {idx + 1}: {p}</span>
-                <span style={{ color: "var(--accent)" }}>📋</span>
+              <button key={idx} onClick={() => { navigator.clipboard.writeText(`Simple flat doodle, high contrast: ${p}`); alert("Copied!"); }} style={{ width: "100%", textAlign: "left", padding: "8px", background: "#f7fafc", border: "1px solid #edf2f7", borderRadius: "6px", marginBottom: "5px", fontSize: "11px", cursor: "pointer" }}>
+                Step {idx + 1}: {p} 📋
               </button>
             ))}
           </div>
