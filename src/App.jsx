@@ -136,50 +136,51 @@ function LessonPlanner() {
     duration: 60 
   });
 
-  const generateAIPlan = () => {
-    if (config.selectedCategories.length === 0) {
-      alert("Please select at least one focus area.");
-      return;
-    }
+  const generateAIPlan = async () => {
+  if (config.selectedCategories.length === 0) {
+    alert("Please select at least one focus area.");
+    return;
+  }
 
-    setLoading(true);
-    setStatus("Connecting to Google AI...");
+  setLoading(true);
+  setStatus("Connecting to AI via Google...");
+
+  // 1. YOUR DEPLOYED GOOGLE WEB APP URL
+  const scriptURL = "https://script.google.com/macros/s/AKfycby3I0pFWyoQ-nHs9gT2lU479mcRFmU1oo534UUe8QrS4ubb1BCjlZj-_x3RY8RQaxp4/exec"; 
+
+  const prompt = `Create a ${config.duration} min session for MINDS MYG. 
+    Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
+    Return JSON: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
+
+  try {
+    // 2. The Fetch Request
+    const response = await fetch(scriptURL, {
+      method: "POST",
+      mode: "no-cors", // Required for Google Apps Script redirects
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ prompt: prompt })
+    });
+
+    /** * NOTE: 'no-cors' mode makes the response 'opaque', 
+     * meaning you can't read the JSON directly for security reasons.
+     * To actually GET the data, most developers use a 'GET' request 
+     * or a proxy, but for a quick fix, let's stick to 'POST'.
+     */
     
-    const prompt = `Create a ${config.duration} minute session for MINDS MYG trainees. 
-      Total activities: ${config.numActivities}. 
-      Categories to include: ${config.selectedCategories.join(", ")}. 
-      For each activity, provide:
-      1. Title.
-      2. Level 1 (Mobility support), Level 2 (General), Level 3 (Challenge).
-      3. Three 'Canva Prompts' for simple visual aids.
-      Return JSON format: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
-
-    try {
-      // This MUST match the function name in Code.gs
-      google.script.run
-        .withSuccessHandler((response) => {
-          try {
-            const data = JSON.parse(response);
-            // Gemini sometimes wraps the JSON in a 'candidates' object depending on your Script setup
-            const actualPlan = data.candidates ? JSON.parse(data.candidates[0].content.parts[0].text) : data;
-            setPlan(actualPlan.activities);
-            setLoading(false);
-            setStatus("");
-          } catch (e) {
-            setStatus("Error parsing AI response.");
-            setLoading(false);
-          }
-        })
-        .withFailureHandler((err) => {
-          setStatus("Server Error: " + err.message);
-          setLoading(false);
-        })
-        .generateLessonPlanWithGemini(prompt);
-    } catch (err) {
-      setStatus("Script Error: " + err.message);
-      setLoading(false);
-    }
-  };
+    // If the above doesn't show data, use this simple GET approach instead:
+    const getURL = `${scriptURL}?prompt=${encodeURIComponent(prompt)}`;
+    const getRes = await fetch(getURL);
+    const data = await getRes.json();
+    
+    setPlan(data.activities);
+    setStatus("");
+  } catch (err) {
+    console.error(err);
+    setStatus("Error: Check Console");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={{ maxWidth: 700, margin: "0 auto", background: "white", padding: 25, borderRadius: 16, border: "1px solid #e2e8f0" }}>
