@@ -129,49 +129,94 @@ function AORForm() {
 function LessonPlanner() {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(null);
-  const [config, setConfig] = useState({ selectedCategories: [], numActivities: 2, duration: 60 });
+  const [config, setConfig] = useState({ 
+    selectedCategories: [], 
+    numActivities: 2, 
+    duration: 60 
+  });
+
+  const CANVA_MAGIC_MEDIA_URL = "https://www.canva.com/magic-home";
 
   const generateAIPlan = async () => {
-    setLoading(false); // Logic to trigger your server-side Gemini function
+    setLoading(true);
+    // This prompt is optimized for Gemini to produce clean JSON for your app
     const prompt = `Create a ${config.duration} min session for MINDS MYG. 
       Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
       For each activity, provide:
       1. Title.
       2. Level 1 (Mobility), Level 2 (General), Level 3 (Challenge).
-      3. Three specific "Canva Image Prompts" (Step 1, Step 2, Step 3) for visual aids.
-      Format: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
-    
+      3. Three "Canva Magic Media Prompts" (Step 1, Step 2, Step 3) in a simple doodle style.
+      Return JSON: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
+
+    try {
+      google.script.run
+        .withSuccessHandler((response) => {
+          const parsed = JSON.parse(response);
+          setPlan(parsed.activities);
+          setLoading(false);
+        })
+        .withFailureHandler(() => {
+          alert("AI Connection failed. Please check your Code.gs setup.");
+          setLoading(false);
+        })
+        .generateLessonPlanWithGemini(prompt);
+    } catch (err) {
+      setLoading(false);
+    }
   };
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    alert("Canva Prompt Copied!");
+    // Subtle feedback instead of a jarring alert
   };
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto", background: "var(--card)", padding: 25, borderRadius: 16 }}>
-      {/* ... (config inputs from previous version) ... */}
+    <div style={{ maxWidth: 700, margin: "0 auto", background: "white", padding: 25, borderRadius: 16, border: "1px solid var(--border)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h3 style={{ color: "var(--accent)", margin: 0 }}>AI Lesson Generator</h3>
+        <a href={CANVA_MAGIC_MEDIA_URL} target="_blank" rel="noreferrer" style={{ fontSize: "12px", color: "var(--accent)", fontWeight: "bold", textDecoration: "none", border: "1px solid var(--accent)", padding: "4px 10px", borderRadius: "12px" }}>
+          Open Canva Magic Media ↗
+        </a>
+      </div>
 
+      {/* Configuration Section */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: 12, fontWeight: "bold", color: "var(--muted)" }}>FOCUS AREAS:</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+          {CATEGORY_OPTIONS.map(cat => (
+            <button key={cat} onClick={() => {
+              const next = config.selectedCategories.includes(cat) 
+                ? config.selectedCategories.filter(c => c !== cat) 
+                : [...config.selectedCategories, cat];
+              setConfig({...config, selectedCategories: next});
+            }} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid #ddd", background: config.selectedCategories.includes(cat) ? "var(--accent)" : "white", color: config.selectedCategories.includes(cat) ? "white" : "black", cursor: "pointer", fontSize: "12px" }}>
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={generateAIPlan} disabled={loading || config.selectedCategories.length === 0} style={{ width: "100%", padding: 12, background: "var(--accent)", color: "white", border: "none", borderRadius: 10, fontWeight: "bold", cursor: "pointer", marginBottom: 30 }}>
+        {loading ? "Creating your plan..." : "Generate Full Lesson Plan ✨"}
+      </button>
+
+      {/* Results Display */}
       {plan && plan.map((act, i) => (
-        <div key={i} style={{ background: "white", padding: 20, borderRadius: 12, marginBottom: 15, border: "1px solid var(--border)" }}>
+        <div key={i} style={{ padding: 20, borderRadius: 12, marginBottom: 20, border: "1px solid #eee", background: "#fafafa" }}>
           <h4 style={{ color: "var(--accent)", marginTop: 0 }}>{act.title}</h4>
           
-          <div style={{ display: "grid", gap: 10, marginBottom: 15 }}>
-            <div style={{ padding: 10, background: "#fdf2f2", borderRadius: 8, fontSize: 13 }}><strong>L1 (Mobility):</strong> {act.l1}</div>
-            <div style={{ padding: 10, background: "#f0fdf4", borderRadius: 8, fontSize: 13 }}><strong>L2 (General):</strong> {act.l2}</div>
-            <div style={{ padding: 10, background: "#eff6ff", borderRadius: 8, fontSize: 13 }}><strong>L3 (Challenge):</strong> {act.l3}</div>
+          <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
+            <div style={{ padding: 10, background: "#fff5f5", borderRadius: 8, fontSize: 13, borderLeft: "4px solid #feb2b2" }}><strong>L1 (Support):</strong> {act.l1}</div>
+            <div style={{ padding: 10, background: "#f0fff4", borderRadius: 8, fontSize: 13, borderLeft: "4px solid #9ae6b4" }}><strong>L2 (General):</strong> {act.level2 || act.l2}</div>
+            <div style={{ padding: 10, background: "#ebf8ff", borderRadius: 8, fontSize: 13, borderLeft: "4px solid #90cdf4" }}><strong>L3 (Challenge):</strong> {act.l3}</div>
           </div>
 
-          {/* New: Canva Prompt Section */}
-          <div style={{ background: "var(--bg)", padding: 12, borderRadius: 8, border: "1.5px dashed var(--accent)" }}>
-            <p style={{ fontSize: 11, fontWeight: "bold", margin: "0 0 8px", color: "var(--accent)" }}>🎨 CANVA VISUAL STEPS</p>
+          <div style={{ background: "white", padding: 15, borderRadius: 8, border: "1px dashed #cbd5e0" }}>
+            <p style={{ fontSize: 11, fontWeight: "bold", margin: "0 0 10px", color: "#4a5568" }}>CANVA IMAGE PROMPTS (Click to Copy):</p>
             {act.canva_prompts.map((p, idx) => (
-              <button 
-                key={idx} 
-                onClick={() => copyToClipboard(`Style: Doodle, Simple, High Contrast. Subject: ${p}`)}
-                style={{ width: "100%", textAlign: "left", padding: "8px", background: "white", border: "1px solid #ddd", borderRadius: "6px", marginBottom: "5px", fontSize: "11px", cursor: "pointer" }}
-              >
-                📋 Copy Prompt for Step {idx + 1}
+              <button key={idx} onClick={() => copyToClipboard(`Educational visual aid, simple flat doodle style, high contrast: ${p}`)} style={{ width: "100%", textAlign: "left", padding: "10px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "6px", marginBottom: "8px", fontSize: "12px", cursor: "pointer", display: "flex", justifyContent: "space-between" }}>
+                <span>Step {idx + 1}: {p}</span>
+                <span style={{ color: "var(--accent)" }}>📋</span>
               </button>
             ))}
           </div>
