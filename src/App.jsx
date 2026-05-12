@@ -15,112 +15,94 @@ const DEFAULT_LINKS = [
   { id: 7, label: "Finance Infographic", url: "https://canva.link/jzdvp6f3vvobcxt", emoji: "💰" },
 ];
 
-const ACTIVITY_TYPES = [
-  { id: "craft", label: "Craft", icon: "🎨" },
-  { id: "numeracy", label: "Numeracy", icon: "🔢" },
-  { id: "physical", label: "Physical Activity", icon: "🏃" },
-  { id: "horticulture", label: "Horticulture", icon: "🌱" },
-  { id: "music", label: "Music", icon: "🎵" },
-  { id: "cooking", label: "Cooking / Baking", icon: "🍳" },
-  { id: "literacy", label: "Literacy", icon: "📖" },
-  { id: "sensory", label: "Sensory Play", icon: "✋" },
-  { id: "social", label: "Social Skills", icon: "🤝" },
-  { id: "drama", label: "Drama / Role Play", icon: "🎭" },
-];
-
 // ─────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────
-function generateId() { return Math.random().toString(36).slice(2, 9); }
-
-// ─────────────────────────────────────────────────────────
-// FINANCE CHECKER
+// FINANCE CHECKER COMPONENT
 // ─────────────────────────────────────────────────────────
 function FinanceChecker() {
   const [amount, setAmount] = useState("");
   const [source, setSource] = useState("budget");
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [result, setResult] = useState(null);
 
-  function check() {
+  const checkFinance = () => {
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0) { setResult({ error: "Please enter a valid amount." }); return; }
-    let steps = [];
+    if (isNaN(amt) || amt <= 0) return;
+
     let category = "";
+    let steps = [];
+
     if (amt < 500) {
-      category = "Claims (<$500)";
+      category = "Claims (< $500)";
       steps = [
-        "✅ Pay out of pocket using Cash, Debit, or NETS (strictly NO credit card).",
-        "📋 Fill in the Claim Form and attach ALL receipts to the same form.",
-        "📁 Submit the completed claim form into the claim form submissions folder.",
-        "⚠️ Each person can claim a maximum of $500 per month.",
-        paymentMethod === "credit" ? "🚨 ALERT: Credit card payments are NOT allowed — this claim may be rejected!" : "",
+        "✅ Use Cash, Debit, or NETS (strictly NO credit card).",
+        "📋 Fill in the Claim Form and attach receipts.",
+        "📁 Submit to the claim submissions folder.",
+        paymentMethod === "credit" ? "⚠️ Warning: Credit card payments are NOT allowed for claims!" : ""
       ].filter(Boolean);
     } else if (amt <= 3000) {
-      category = source === "budget" ? "Invoices ($500–$3000)" : "Invoices from Donations ($500–$3000)";
+      category = "Invoices ($500 - $3000)";
       steps = [
         "🧾 Ask vendor for an invoice with 30-day credit.",
-        "📝 Bill to: MINDSG LTD, 11 Jalan Ubi, Block 3 #01-21 (Level 2), Singapore 409074.",
-        "📄 Ask vendor to fill in an Account Opening Form.",
-        "📁 Submit the invoice + Account Opening Form in the invoice submission folder.",
-        "💰 Payment to vendor: by 15th if submitted before 2nd, or by 30th if submitted before 17th.",
-        source === "donation" ? "📧 Email donation@minds.org.sg to inform of designation to MINDS MYG." : "",
-      ].filter(Boolean);
+        "📝 Bill to: MINDSG LTD, 11 Jalan Ubi, Block 3 #01-21, S409074.",
+        "📄 Vendor must fill in Account Opening Form if new.",
+        "📁 Submit to the invoice submission folder."
+      ];
     } else {
-      category = source === "budget" ? "Quotations (>$3000)" : "Quotations from Donations (>$3000)";
+      category = "Quotations (> $3000)";
       steps = [
-        "⏰ Start at least 3 months before the event/purchase.",
-        "✉️ MINDS staff must get approval from CSS Director or Finance Director + CEO.",
-        "📋 MINDS staff issues an Invitation to Quote (ITQ) — other vendors can bid.",
-        "🤝 Share quotations with project team, who selects the chosen vendor.",
-        "🛒 Project proceeds with purchase from chosen vendor.",
-        "🧾 Ask for invoice with 30-day credit, then follow Invoice steps.",
-        "⚠️ If only 1 vendor available (no 3 quotes), MINDS staff need an extra week for Direct Contracting approval.",
-        source === "donation" ? "🚫 Donation funds: do NOT make payment yet — MINDS staff must first get Finance Director + CEO approval." : "",
-      ].filter(Boolean);
+        "⏰ Start 3 months before purchase.",
+        "✉️ Staff must get approval from Directors/CEO.",
+        "📋 Staff issues an Invitation to Quote (ITQ).",
+        "🤝 Team selects vendor from at least 3 quotes."
+      ];
     }
-    setResult({ category, steps, amount: amt });
-  }
+    setResult({ category, steps });
+  };
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto" }}>
-      <div style={{ background: "var(--card)", borderRadius: 16, padding: 28, marginBottom: 20, border: "1px solid var(--border)" }}>
-        <h3 style={{ margin: "0 0 20px", fontSize: 18, fontFamily: "serif", color: "var(--accent)" }}>Finance Rules Checker</h3>
-        <label style={{ display: "block", marginBottom: 6, fontSize: 13, fontWeight: 600, color: "var(--muted)" }}>PURCHASE AMOUNT (SGD)</label>
-        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px solid var(--border)", marginBottom: 16 }} />
-        <button onClick={check} style={{ width: "100%", padding: "13px", borderRadius: 12, background: "var(--accent)", color: "#fff", fontWeight: 700 }}>Check Finance Rules →</button>
-      </div>
-      {result && <div style={{ background: "var(--card)", padding: 20, borderRadius: 16, border: "1px solid var(--border)" }}>
-        <h4>{result.category}</h4>
-        {result.steps.map((s, i) => <p key={i}>{s}</p>)}
-      </div>}
+    <div style={{ background: "white", padding: 20, borderRadius: 12, border: "1px solid var(--border)" }}>
+      <h3 style={{ color: "var(--accent)" }}>Finance Rules Checker</h3>
+      <input 
+        type="number" 
+        placeholder="Enter amount (SGD)" 
+        value={amount} 
+        onChange={(e) => setAmount(e.target.value)}
+        style={{ width: "100%", padding: 10, marginBottom: 10, borderRadius: 8, border: "1px solid #ccc" }}
+      />
+      <button onClick={checkFinance} style={{ width: "100%", padding: 10, background: "var(--accent)", color: "white", border: "none", borderRadius: 8 }}>Check Rules</button>
+      {result && (
+        <div style={{ marginTop: 20, padding: 15, background: "#f9fafb", borderRadius: 8 }}>
+          <h4>{result.category}</h4>
+          <ul style={{ paddingLeft: 20 }}>{result.steps.map((s, i) => <li key={i}>{s}</li>)}</ul>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────
-// LESSON PLANNER
+// AOR FORM COMPONENT
+// ─────────────────────────────────────────────────────────
+function AORForm() {
+  return (
+    <div style={{ background: "white", padding: 20, borderRadius: 12, border: "1px solid var(--border)" }}>
+      <h3 style={{ color: "var(--accent)" }}>Approval of Resources (AOR)</h3>
+      <p>Please use this for any budget requests or resource allocation.</p>
+      <button style={{ padding: "10px 20px", background: "var(--accent)", color: "white", border: "none", borderRadius: 8 }}>
+        Open AOR Form
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
+// LESSON PLANNER COMPONENT
 // ─────────────────────────────────────────────────────────
 function LessonPlanner() {
   return (
-    <div style={{ maxWidth: 860, margin: "0 auto", background: "var(--card)", padding: 28, borderRadius: 16, border: "1px solid var(--border)" }}>
+    <div style={{ background: "white", padding: 20, borderRadius: 12, border: "1px solid var(--border)" }}>
       <h3 style={{ color: "var(--accent)" }}>Lesson Planner</h3>
-      <p>Module coming soon.</p>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────
-// LINKS PAGE
-// ─────────────────────────────────────────────────────────
-function LinksPage({ links }) {
-  return (
-    <div style={{ maxWidth: 480, margin: "0 auto" }}>
-      {links.map(link => (
-        <a key={link.id} href={link.url} target="_blank" rel="noreferrer" style={{ display: "block", padding: 16, background: "var(--card)", marginBottom: 8, borderRadius: 12, border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)" }}>
-          {link.emoji} {link.label}
-        </a>
-      ))}
+      <p>Module currently under development for MYG activities.</p>
     </div>
   );
 }
@@ -130,7 +112,6 @@ function LinksPage({ links }) {
 // ─────────────────────────────────────────────────────────
 export default function App() {
   const [activeTab, setActiveTab] = useState("links");
-  const [links] = useState(DEFAULT_LINKS);
 
   const cssVars = {
     "--bg": "#f0fdf4", "--card": "#ffffff", "--border": "#d1fae5",
@@ -139,23 +120,47 @@ export default function App() {
 
   return (
     <div style={{ ...cssVars, minHeight: "100vh", background: "var(--bg)", color: "var(--text)", fontFamily: "sans-serif" }}>
-      <header style={{ background: "var(--accent)", color: "#fff", padding: 20, textAlign: "center" }}>
-        <h1>MINDS MYG</h1>
+      <header style={{ background: "var(--accent)", color: "#fff", padding: "20px 40px", textAlign: "center" }}>
+        <h1 style={{ margin: 0 }}>MINDS MYG Portal</h1>
       </header>
-      <nav style={{ display: "flex", justifyContent: "center", gap: 10, padding: 20 }}>
-        {["links", "finance", "lesson"].map(t => (
-          <button key={t} onClick={() => setActiveTab(t)} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--border)", cursor: "pointer", background: activeTab === t ? "var(--accent)" : "white", color: activeTab === t ? "white" : "black" }}>
+      
+      <nav style={{ display: "flex", justifyContent: "center", gap: 10, padding: 20, flexWrap: "wrap" }}>
+        {["links", "finance", "aor", "lesson"].map(t => (
+          <button 
+            key={t} 
+            onClick={() => setActiveTab(t)} 
+            style={{ 
+              padding: "10px 20px", 
+              borderRadius: 20, 
+              border: "1px solid var(--accent)", 
+              cursor: "pointer", 
+              background: activeTab === t ? "var(--accent)" : "white", 
+              color: activeTab === t ? "white" : "var(--accent)",
+              fontWeight: "bold"
+            }}
+          >
             {t.toUpperCase()}
           </button>
         ))}
       </nav>
-      <main style={{ padding: 20 }}>
-        {activeTab === "links" && <LinksPage links={links} />}
+
+      <main style={{ maxWidth: 600, margin: "0 auto", padding: 20 }}>
+        {activeTab === "links" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {DEFAULT_LINKS.map(link => (
+              <a key={link.id} href={link.url} target="_blank" rel="noreferrer" style={{ display: "block", padding: 16, background: "white", borderRadius: 12, border: "1px solid var(--border)", textDecoration: "none", color: "var(--text)", textAlign: "center" }}>
+                {link.emoji} {link.label}
+              </a>
+            ))}
+          </div>
+        )}
         {activeTab === "finance" && <FinanceChecker />}
+        {activeTab === "aor" && <AORForm />}
         {activeTab === "lesson" && <LessonPlanner />}
       </main>
-      <footer style={{ textAlign: "center", padding: "24px", color: "var(--muted)", fontSize: 12 }}>
-        MINDS MYG Portal • Built with ❤️
+
+      <footer style={{ textAlign: "center", padding: 40, color: "var(--muted)", fontSize: 12 }}>
+        MINDS MYG Portal • Supporting our community with care
       </footer>
     </div>
   );
