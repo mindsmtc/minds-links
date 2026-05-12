@@ -138,45 +138,39 @@ function LessonPlanner() {
 
   const generateAIPlan = async () => {
   if (config.selectedCategories.length === 0) {
-    alert("Please select at least one focus area.");
+    alert("Please select focus areas first.");
     return;
   }
 
   setLoading(true);
-  setStatus("Connecting to AI via Google...");
+  setStatus("Asking Gemini to plan...");
 
-  // 1. YOUR DEPLOYED GOOGLE WEB APP URL
+  // 🚨 MUST be your Deployed Web App URL (ends in /exec)
   const scriptURL = "https://script.google.com/macros/s/AKfycby3I0pFWyoQ-nHs9gT2lU479mcRFmU1oo534UUe8QrS4ubb1BCjlZj-_x3RY8RQaxp4/exec"; 
 
-  const prompt = `Create a ${config.duration} min session for MINDS MYG. 
+  const promptText = `Create a ${config.duration} min session for MINDS MYG. 
     Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
     Return JSON: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
 
   try {
-    // 2. The Fetch Request
-    const response = await fetch(scriptURL, {
-      method: "POST",
-      mode: "no-cors", // Required for Google Apps Script redirects
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ prompt: prompt })
-    });
-
-    /** * NOTE: 'no-cors' mode makes the response 'opaque', 
-     * meaning you can't read the JSON directly for security reasons.
-     * To actually GET the data, most developers use a 'GET' request 
-     * or a proxy, but for a quick fix, let's stick to 'POST'.
-     */
+    // We use a GET request because it's more stable for Google Apps Script redirects
+    const finalURL = `${scriptURL}?prompt=${encodeURIComponent(promptText)}`;
     
-    // If the above doesn't show data, use this simple GET approach instead:
-    const getURL = `${scriptURL}?prompt=${encodeURIComponent(prompt)}`;
-    const getRes = await fetch(getURL);
-    const data = await getRes.json();
+    const response = await fetch(finalURL);
     
-    setPlan(data.activities);
-    setStatus("");
+    if (!response.ok) throw new Error('Network response was not ok');
+    
+    const data = await response.json();
+    
+    if (data.activities) {
+      setPlan(data.activities);
+      setStatus("");
+    } else {
+      setStatus("AI returned an empty plan.");
+    }
   } catch (err) {
-    console.error(err);
-    setStatus("Error: Check Console");
+    console.error("Fetch Error:", err);
+    setStatus("Connection Error. Check if the Script URL is correct and deployed as 'Anyone'.");
   } finally {
     setLoading(false);
   }
