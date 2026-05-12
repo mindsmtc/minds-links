@@ -139,38 +139,33 @@ function LessonPlanner() {
 const generateAIPlan = async () => {
   setLoading(true);
   setStatus("Planning session...");
-  setPlan(null); // Clear old plan
 
-  const scriptURL = "https://script.google.com/macros/s/AKfycbw17lj9Qktr-_ANVvOZot8LWvOX2ha194PIjXt-eUIPyUYuTLFaGKMG2qevY2t7zltk/exec";
-  const promptText = `Generate a JSON lesson plan for... [your prompt]`;
+  // 1. Double check this is your DEPLOYED url (ends in /exec)
+  const scriptURL = "https://script.google.com/macros/s/AKfycbyW3xoVTaIyD4qZLXqRI4lwIwWjoseM2IRbayGVg5f4kesVd8Ylet_C2RNMqeiQGS4/exec"; 
+
+  const promptText = `Generate a lesson plan for... [your prompt logic here]`;
 
   try {
-    // 1. Construct the URL with the prompt attached
+    // 2. We put the prompt in the URL. This is a "Simple Request".
     const finalURL = `${scriptURL}?prompt=${encodeURIComponent(promptText)}`;
-
-    // 2. Fetch as a 'Simple Request'
+    
     const response = await fetch(finalURL, {
       method: "GET",
-      // mode: 'cors' is default, but 'no-cors' would make the result unreadable.
-      // 'follow' is the secret to getting past Google's redirects.
-      redirect: "follow" 
+      mode: "cors", // Required
+      redirect: "follow", // CRITICAL: Google ALWAYS redirects
     });
 
-    // 3. Get the raw text first (this avoids the JSON parse freeze)
-    const rawText = await response.text();
+    if (!response.ok) throw new Error('Network response failed');
     
-    // 4. Manual parse
-    const data = JSON.parse(rawText);
-
+    const data = await response.json();
+    
     if (data.activities) {
       setPlan(data.activities);
       setStatus("");
-    } else {
-      setStatus("AI returned unexpected data.");
     }
   } catch (err) {
-    console.error("Connection Error:", err);
-    setStatus("Connection failed. Check your Script deployment settings.");
+    console.error("Fetch Error:", err);
+    setStatus("Connection failed. Check browser console for details.");
   } finally {
     setLoading(false);
   }
