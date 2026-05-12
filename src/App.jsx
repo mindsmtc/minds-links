@@ -137,42 +137,40 @@ function LessonPlanner() {
   });
 
 const generateAIPlan = async () => {
-  if (config.selectedCategories.length === 0) {
-    alert("Please select focus areas first.");
-    return;
-  }
-
   setLoading(true);
   setStatus("Planning session...");
+  setPlan(null); // Clear old plan
 
-  // 🚨 Use your DEPLOYED Web App URL
-  const scriptURL = "https://script.google.com/macros/s/AKfycbykoI1BQOi38K9jlTX5goLOu9Wuky3ttLyUXE12UAlBIMd0ri9umHwyxmZvHJ5GY6cj/exec"; 
-
-  const promptText = `Create a ${config.duration} min session for MINDS MYG. 
-    Activities: ${config.numActivities}. Categories: ${config.selectedCategories.join(", ")}. 
-    Return JSON: {"activities": [{"title": "", "l1": "", "l2": "", "l3": "", "canva_prompts": ["", "", ""]}]}`;
+  const scriptURL = "https://script.google.com/macros/s/AKfycbw17lj9Qktr-_ANVvOZot8LWvOX2ha194PIjXt-eUIPyUYuTLFaGKMG2qevY2t7zltk/exec";
+  const promptText = `Generate a JSON lesson plan for... [your prompt]`;
 
   try {
-    // 💡 GET requests with 'follow' redirect bypass most CORS blocks in GAS
+    // 1. Construct the URL with the prompt attached
     const finalURL = `${scriptURL}?prompt=${encodeURIComponent(promptText)}`;
-    
+
+    // 2. Fetch as a 'Simple Request'
     const response = await fetch(finalURL, {
       method: "GET",
-      mode: "cors", // Let the browser know we expect a cross-origin response
-      redirect: "follow" // 🚨 REQUIRED: Google redirects all Web App calls
+      // mode: 'cors' is default, but 'no-cors' would make the result unreadable.
+      // 'follow' is the secret to getting past Google's redirects.
+      redirect: "follow" 
     });
 
-    if (!response.ok) throw new Error('Network error');
+    // 3. Get the raw text first (this avoids the JSON parse freeze)
+    const rawText = await response.text();
     
-    const data = await response.json();
-    
-    if (data && data.activities) {
+    // 4. Manual parse
+    const data = JSON.parse(rawText);
+
+    if (data.activities) {
       setPlan(data.activities);
       setStatus("");
+    } else {
+      setStatus("AI returned unexpected data.");
     }
   } catch (err) {
-    console.error("Fetch Error:", err);
-    setStatus("Connection Error. Ensure script is deployed as 'Anyone'.");
+    console.error("Connection Error:", err);
+    setStatus("Connection failed. Check your Script deployment settings.");
   } finally {
     setLoading(false);
   }
